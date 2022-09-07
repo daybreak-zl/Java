@@ -47,10 +47,131 @@ Mybatis缓存分为一级缓存和二级缓存，二级缓存默认关闭；
 
 
 
-ErrorContext
+## ErrorContext
 
-Mybatis执行流程
+```java
+public class ErrorContext {
+    private static final String LINE_SEPARATOR = System.lineSeparator();
+    private static final ThreadLocal<ErrorContext> LOCAL = ThreadLocal.withInitial(ErrorContext::new);
+    private ErrorContext stored;
+    private String resource;
+    private String activity;
+    private String object;
+    private String message;
+    private String sql;
+    private Throwable cause;
 
-sqlSession.openSession()
+    private ErrorContext() {
+    }
+
+    public static ErrorContext instance() {
+        return (ErrorContext)LOCAL.get();
+    }
+
+    public ErrorContext store() {
+        ErrorContext newContext = new ErrorContext();
+        newContext.stored = this;
+        LOCAL.set(newContext);
+        return (ErrorContext)LOCAL.get();
+    }
+
+    public ErrorContext recall() {
+        if (this.stored != null) {
+            LOCAL.set(this.stored);
+            this.stored = null;
+        }
+
+        return (ErrorContext)LOCAL.get();
+    }
+
+    public ErrorContext resource(String resource) {
+        this.resource = resource;
+        return this;
+    }
+
+    public ErrorContext activity(String activity) {
+        this.activity = activity;
+        return this;
+    }
+
+    public ErrorContext object(String object) {
+        this.object = object;
+        return this;
+    }
+
+    public ErrorContext message(String message) {
+        this.message = message;
+        return this;
+    }
+
+    public ErrorContext sql(String sql) {
+        this.sql = sql;
+        return this;
+    }
+
+    public ErrorContext cause(Throwable cause) {
+        this.cause = cause;
+        return this;
+    }
+
+    public ErrorContext reset() {
+        this.resource = null;
+        this.activity = null;
+        this.object = null;
+        this.message = null;
+        this.sql = null;
+        this.cause = null;
+        LOCAL.remove();
+        return this;
+    }
+
+    public String toString() {
+        StringBuilder description = new StringBuilder();
+        if (this.message != null) {
+            description.append(LINE_SEPARATOR);
+            description.append("### ");
+            description.append(this.message);
+        }
+
+        if (this.resource != null) {
+            description.append(LINE_SEPARATOR);
+            description.append("### The error may exist in ");
+            description.append(this.resource);
+        }
+
+        if (this.object != null) {
+            description.append(LINE_SEPARATOR);
+            description.append("### The error may involve ");
+            description.append(this.object);
+        }
+
+        if (this.activity != null) {
+            description.append(LINE_SEPARATOR);
+            description.append("### The error occurred while ");
+            description.append(this.activity);
+        }
+
+        if (this.sql != null) {
+            description.append(LINE_SEPARATOR);
+            description.append("### SQL: ");
+            description.append(this.sql.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ').trim());
+        }
+
+        if (this.cause != null) {
+            description.append(LINE_SEPARATOR);
+            description.append("### Cause: ");
+            description.append(this.cause.toString());
+        }
+
+        return description.toString();
+    }
+}
+```
+
+
+
+## Mybatis执行流程
+
+sqlSession.selectOne()
 
 sqlSession.getMapper()
